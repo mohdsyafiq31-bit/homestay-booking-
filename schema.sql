@@ -2,7 +2,7 @@
 -- BEFORE running, change CHANGE-ME-PASSCODE below to your own strong staff passcode.
 
 create table if not exists settings (key text primary key, value text not null);
-insert into settings values ('passcode', 'CHANGE-ME-PASSCODE') on conflict (key) do nothing;
+insert into settings values ('passcode', 'SRIKILIM') on conflict (key) do nothing;
 
 -- One row per room type per night. The primary key makes double booking impossible.
 create table if not exists nights (id text primary key, data jsonb not null);
