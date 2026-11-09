@@ -48,3 +48,4 @@ begin
 end $$;
 
 grant execute on function book_night(text, jsonb, text), update_income(text, numeric, text), cancel_night(text, text) to anon, authenticated;
+update settings set value = 'SRIKILIM' where key = 'passcode';
