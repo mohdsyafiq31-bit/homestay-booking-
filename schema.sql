@@ -9,8 +9,8 @@ create table if not exists nights (id text primary key, data jsonb not null);
 
 alter table settings enable row level security;   -- no policies: the passcode can never be read through the API
 alter table nights enable row level security;
-drop policy if exists "anyone can view nights" on nights;
-create policy "anyone can view nights" on nights for select using (true);
+drop policy if exists "anyone can edit and view nights" on nights;
+create policy "anyone can view and edit nights" on nights for select using (true);
 -- No insert/update/delete policies: changes only happen through the functions below.
 
 create or replace function check_pass(p text) returns void
