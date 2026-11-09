@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Homestay Calendar</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;700;800&display=swap">
+<style>
+:root{--bg:#EDF1F4;--surface:#fff;--ink:#15222B;--mute:#5B6B76;--line:#D3DCE2;--accent:#1F5FBF;--accent-ink:#fff;--busy:#CFDDF3;--wknd:#F4F7F9;--wa:#1B8F4A;--bad:#B3321F;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F171C;--surface:#17232A;--ink:#E7EEF2;--mute:#93A4AF;--line:#2B3B45;--accent:#6BA3FF;--accent-ink:#0F171C;--busy:#25405F;--wknd:#1B2A32;--wa:#4CC38A;--bad:#FF8A76}}
+:root[data-theme="dark"]{--bg:#0F171C;--surface:#17232A;--ink:#E7EEF2;--mute:#93A4AF;--line:#2B3B45;--accent:#6BA3FF;--accent-ink:#0F171C;--busy:#25405F;--wknd:#1B2A32;--wa:#4CC38A;--bad:#FF8A76}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.5 Figtree,system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.1;margin:8px 0 4px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:18px;margin:0 0 12px;font-weight:700}
+p.sub{margin:0 0 12px;color:var(--mute);max-width:64ch}
+.live{display:inline-flex;gap:6px;align-items:center;font-size:13px;color:var(--mute);margin-bottom:12px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--mute)}
+.live.on i{background:#2FA66A}
+.income{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-end}
+.income .big{font-size:clamp(34px,7vw,52px);font-weight:800;letter-spacing:-.02em;line-height:1}
+.income small{display:block;color:var(--mute);font-size:13px;margin-bottom:4px}
+.types{display:flex;flex-wrap:wrap;gap:8px 20px;margin:14px 0 0;padding:12px 0 0;border-top:1px solid var(--line);font-size:14px}
+.types span{color:var(--mute)}
+.types b{color:var(--ink)}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
+.bar .date{font-weight:700;font-size:20px;flex:1;min-width:150px}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 14px;font-weight:500;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.btn.wa{border-color:var(--wa);color:var(--wa);font-weight:700}
+.btn:focus-visible,.cell:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:20px}
+.scroll{overflow-x:auto}
+.grid{display:grid;grid-template-columns:150px repeat(var(--n),minmax(36px,1fr));min-width:calc(150px + var(--n)*36px)}
+.dh{text-align:center;font-size:12px;color:var(--mute);border-left:1px solid var(--line);padding-bottom:4px;line-height:1.2}
+.dh b{display:block;font-size:14px;color:var(--ink)}
+.rn{padding:8px 8px 8px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+.rn b{font-size:15px}
+.rn span{font-size:12.5px;color:var(--mute)}
+.cell,.block{min-height:52px;border:0;border-top:1px solid var(--line);border-left:1px solid var(--line);padding:2px 4px}
+.cell{background:transparent}
+.cell.wk{background:var(--wknd)}
+.cell.free:hover{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.cell.sel{background:var(--accent)}
+.block{background:var(--busy);font-size:12px;font-weight:600;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:flex;align-items:center}
+.legend{display:flex;gap:16px;font-size:13px;color:var(--mute);margin-top:10px;flex-wrap:wrap}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line)}
+form{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+.full{grid-column:1/-1}
+label{display:grid;gap:4px;font-weight:500;font-size:14px}
+input[type=text],input[type=number],textarea{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;width:100%}
+.summary{font-size:17px;font-weight:700;margin-bottom:12px}
+.hint{color:var(--mute);margin:0}
+.msg{margin:0;font-size:14px;color:var(--bad)}
+ul.list{list-style:none;margin:0;padding:0}
+ul.list li{display:flex;gap:12px;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--line);flex-wrap:wrap}
+ul.list li:first-child{border-top:0}
+ul.list small{color:var(--mute);display:block}
+.row-act{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.row-act input{width:110px;padding:7px 8px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:700;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;text-align:center}
+.toast.on{opacity:1}
+@media (max-width:560px){form{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1F5FBF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Homestay">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+<main>
+  <h1>Homestay Calendar</h1>
+  <p class="sub">Check-in is 2 pm and check-out is 12 noon the next day. Each column is a night: it runs from 2 pm that date to noon the next day. Booking a night blocks that room for everyone.</p>
+  <div class="live" id="live" role="status"><i></i><span id="livetxt">Connecting to shared bookings…</span></div>
+
+  <section class="panel" aria-label="Monthly income">
+    <div class="income">
+      <div><small id="incLabel">Income this month</small><div class="big" id="inc">MYR 0</div></div>
+      <div><small>Bookings</small><b id="cnt">0</b></div>
+      <div><small>Nights booked</small><b id="nts">0</b></div>
+      <div><small>Occupancy</small><b id="occ">0%</b></div>
+    </div>
+    <div class="types" id="types"></div>
+    <p class="hint" style="margin-top:10px;font-size:13px">Each booking’s income is counted in the month of its check-in date.</p>
+  </section>
+
+  <section class="panel" aria-label="Calendar">
+    <div class="bar">
+      <button class="btn" id="prev" aria-label="Previous month">‹</button>
+      <div class="date" id="mlabel" aria-live="polite"></div>
+      <button class="btn" id="today">This month</button>
+      <button class="btn" id="next" aria-label="Next month">›</button>
+    </div>
+    <div class="scroll"><div class="grid" id="grid" role="grid"></div></div>
+    <div class="legend"><span><i></i>Free night</span><span><i style="background:var(--busy)"></i>Booked</span><span><i style="background:var(--accent)"></i>Your selection</span></div>
+  </section>
+
+  <section class="panel" aria-label="Add booking">
+    <h2>Add booking</h2>
+    <p class="hint" id="empty">Select the check-in night in a room’s row, then the last night of the stay in the same row. For one night, select it once.</p>
+    <div id="bookbox" hidden>
+      <div class="summary" id="sum"></div>
+      <form id="form" novalidate>
+        <label>Booking name<input type="text" id="name" autocomplete="name"></label>
+        <label>Income for this booking (MYR)<input type="number" id="income" min="0" step="0.01" inputmode="decimal"></label>
+        <label class="full">Notes (optional)<textarea id="notes" rows="2"></textarea></label>
+        <p class="msg full" id="err" role="alert" hidden></p>
+        <div class="full">
+          <button class="btn primary" type="submit" id="go">Save booking</button>
+          <a class="btn wa" id="wa" target="_blank" rel="noopener">Send request on WhatsApp</a>
+          <button class="btn" type="button" id="clear">Clear selection</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section class="panel" aria-label="Bookings">
+    <h2>Bookings this month</h2>
+    <ul class="list" id="list"></ul>
+  </section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="config.js"></script>
+<script src="shim.js"></script>
+<script>
+(function(){
+var TYPES=[
+ {id:'t1',n:1,name:'3 Room A'},{id:'t2',n:2,name:'3 Room B'},
+ {id:'t3',n:3,name:'2 Room A'},{id:'t4',n:4,name:'2 Room B'},
+ {id:'t5',n:5,name:'Studio A'},{id:'t6',n:6,name:'Studio B'},{id:'t7',n:7,name:'Studio C'}
+];
+var TAB=Math.random().toString(36).slice(2);
+var now=new Date(),Y=now.getFullYear(),M=now.getMonth();
+var db=null,nights={},sel=null,busy=false,ready=false;
+
+function pad(n){return n<10?'0'+n:''+n}
+function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function fromIso(s){var p=s.split('-');return new Date(+p[0],+p[1]-1,+p[2])}
+function addDays(s,n){var d=fromIso(s);d.setDate(d.getDate()+n);return iso(d)}
+function fmt(s){return fromIso(s).toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'})}
+function tname(id){for(var i=0;i<TYPES.length;i++)if(TYPES[i].id===id)return 'Type '+TYPES[i].n+' · '+TYPES[i].name;return id}
+function el(id){return document.getElementById(id)}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function money(v){return 'MYR '+(Math.round(v*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2})}
+function sid(t,d){return t+'_'+d}
+function mdays(){return new Date(Y,M+1,0).getDate()}
+function ds(d){return Y+'-'+pad(M+1)+'-'+pad(d)}
+function mpre(){return Y+'-'+pad(M+1)}
+function nightsIn(a,b){var c=0,d=a;while(d<=b){c++;d=addDays(d,1)}return c}
+function lsGet(k){try{return localStorage.getItem(k)||''}catch(e){return ''}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function setErr(t){var e=el('err');e.textContent=t||'';e.hidden=!t}
+function toast(t){var x=el('toast');x.textContent=t;x.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(function(){x.classList.remove('on')},2800)}
+
+function render(){
+  var N=mdays(),mn=new Date(Y,M,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  el('mlabel').textContent=mn;
+  var g='<div></div>';
+  for(var d=1;d<=N;d++){var wd=new Date(Y,M,d);g+='<div class="dh"><b>'+d+'</b>'+wd.toLocaleDateString(undefined,{weekday:'narrow'})+'</div>'}
+  TYPES.forEach(function(t){
+    g+='<div class="rn" role="rowheader"><b>'+t.name+'</b><span>Type '+t.n+'</span></div>';
+    var d=1;
+    while(d<=N){
+      var date=ds(d),b=nights[sid(t.id,date)];
+      if(b){
+        var len=1;
+        while(d+len<=N){var nb=nights[sid(t.id,ds(d+len))];if(nb&&nb.bid===b.bid)len++;else break}
+        g+='<div class="block" style="grid-column:span '+len+'" role="gridcell" title="'+esc(b.name+' · '+fmt(b.start)+' 2 pm to '+fmt(b.end)+' 12 noon')+'" aria-label="'+esc(t.name+' booked by '+b.name)+'">'+esc(b.name)+'</div>';
+        d+=len;
+      }else{
+        var s=sel&&sel.t===t.id&&date>=sel.a&&date<=sel.b,wk=[0,6].indexOf(new Date(Y,M,d).getDay())>-1;
+        g+='<button type="button" class="cell '+(s?'sel':'free'+(wk?' wk':''))+'" data-t="'+t.id+'" data-d="'+date+'" role="gridcell" aria-label="'+esc(t.name+', night of '+fmt(date)+', '+(s?'selected':'free'))+'"></button>';
+        d++;
+      }
+    }
+  });
+  var gr=el('grid');gr.style.setProperty('--n',N);gr.innerHTML=g;
+
+  el('empty').hidden=!!sel;el('bookbox').hidden=!sel;
+  if(sel){
+    var n=nightsIn(sel.a,sel.b);
+    el('sum').textContent=tname(sel.t)+' · Check-in '+fmt(sel.a)+', 2 pm → Check-out '+fmt(addDays(sel.b,1))+', 12 noon · '+n+(n===1?' night':' nights');
+    updateWa();
+  }
+
+  var seen={},rows=[],inc=0,cnt=0,nt=0,per={};
+  Object.keys(nights).forEach(function(k){
+    var b=nights[k];
+    if(b.date.indexOf(mpre())===0)nt++;
+    if(!seen[b.bid]&&b.date===b.start){
+      seen[b.bid]=1;
+      if(b.start.indexOf(mpre())===0){var v=+b.income||0;inc+=v;cnt++;per[b.type]=(per[b.type]||0)+v}
+    }
+  });
+  var seen2={};
+  Object.keys(nights).forEach(function(k){var b=nights[k];if(b.date.indexOf(mpre())===0&&!seen2[b.bid]){seen2[b.bid]=1;rows.push(b)}});
+  rows.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
+  el('incLabel').textContent='Income in '+mn;
+  el('inc').textContent=money(inc);el('cnt').textContent=cnt;el('nts').textContent=nt;
+  el('occ').textContent=Math.round(nt/(TYPES.length*N)*100)+'%';
+  el('types').innerHTML=TYPES.map(function(t){return '<div><span>'+t.name+'</span> <b>'+money(per[t.id]||0)+'</b></div>'}).join('');
+  el('list').innerHTML=rows.length?rows.map(function(b){
+    var key=esc(b.type+'|'+b.start+'|'+b.end),n=nightsIn(b.start,addDays(b.end,-1));
+    return '<li><div><b>'+esc(b.name)+'</b> · '+tname(b.type)+'<small>Check-in '+fmt(b.start)+', 2 pm → Check-out '+fmt(b.end)+', 12 noon · '+n+(n===1?' night':' nights')+(b.notes?' · '+esc(b.notes):'')+'</small></div>'+
+    '<div class="row-act"><span class="hint">MYR</span><input type="number" min="0" step="0.01" value="'+(+b.income||0)+'" aria-label="Income for '+esc(b.name)+'"><button class="btn" data-inc="'+key+'">Update income</button><button class="btn" data-cancel="'+key+'">Cancel booking</button></div></li>'}).join(''):'<li><span class="hint">'+(ready?'No bookings in this month yet. Select a free night above to add the first one.':'Loading bookings…')+'</span></li>';
+}
+function updateWa(){
+  var t='Homestay request: '+tname(sel.t)+', check-in '+fmt(sel.a)+' 2 pm, check-out '+fmt(addDays(sel.b,1))+' 12 noon. Name: '+(el('name').value||'—');
+  el('wa').href='https://wa.me/?text='+encodeURIComponent(t);
+}
+
+el('grid').addEventListener('click',function(e){
+  var c=e.target.closest('.cell');if(!c)return;
+  var t=c.dataset.t,d=c.dataset.d;setErr('');
+  if(sel&&sel.t===t&&sel.a===sel.b&&sel.a===d)sel=null;
+  else if(sel&&sel.t===t&&sel.a===sel.b){
+    var lo=sel.a<d?sel.a:d,hi=sel.a<d?d:sel.a,ok=true,x=lo;
+    while(x<=hi){if(nights[sid(t,x)])ok=false;x=addDays(x,1)}
+    sel=ok?{t:t,a:lo,b:hi}:{t:t,a:d,b:d};
+  }else sel={t:t,a:d,b:d};
+  render();
+});
+el('name').addEventListener('input',function(){if(sel)updateWa()});
+
+async function book(s,info){
+  var claimed=[],bid=TAB+Date.now(),n=nightsIn(s.a,s.b),d=s.a;
+  try{
+    for(var i=0;i<n;i++){
+      var ref=db.collection('nights').doc(sid(s.t,d));
+      var a=await ref.acquire({holder:TAB,ttlMs:5000});
+      if(!a.acquired)throw 'clash';
+      var snap=await ref.get(),x=snap.exists&&snap.data();
+      if(x&&x.name)throw 'clash';
+      await ref.set({type:s.t,date:d,start:s.a,end:addDays(s.b,1),bid:bid,name:info.name,income:info.income,notes:info.notes});
+      claimed.push(ref);d=addDays(d,1);
+    }
+    return 'ok';
+  }catch(err){
+    for(var j=0;j<claimed.length;j++){try{await claimed[j].delete()}catch(e){}}
+    return err==='clash'?'clash':'error';
+  }
+}
+el('form').addEventListener('submit',async function(e){
+  e.preventDefault();if(busy||!sel)return;
+  var n=el('name').value.trim(),raw=el('income').value.trim(),inc=parseFloat(raw);
+  if(!n){setErr('Enter a booking name.');return}
+  if(raw===''||isNaN(inc)||inc<0){setErr('Enter the income as a number, like 450. Use 0 if there is none.');return}
+  if(!db){setErr('Shared bookings are not connected. Reload the page, or send your request on WhatsApp.');return}
+  busy=true;el('go').disabled=true;setErr('');
+  var res=await book(sel,{name:n,income:Math.round(inc*100)/100,notes:el('notes').value.trim()});
+  busy=false;el('go').disabled=false;
+  if(res==='ok'){sel=null;el('name').value='';el('income').value='';el('notes').value='';render();toast('Booking saved')}
+  else if(res==='clash'){sel=null;render();toast('Someone just booked one of those nights. Pick other dates.')}
+  else setErr('Could not save. You may have view-only access, so ask the page owner to invite you as an editor, or send a request on WhatsApp.');
+});
+el('list').addEventListener('click',async function(e){
+  var c=e.target.getAttribute('data-cancel'),u=e.target.getAttribute('data-inc');
+  if(!db||(!c&&!u))return;
+  var p=(c||u).split('|'),d=p[1];
+  try{
+    if(c){while(d<p[2]){await db.collection('nights').doc(sid(p[0],d)).delete();d=addDays(d,1)}toast('Booking cancelled')}
+    else{
+      var v=parseFloat(e.target.parentNode.querySelector('input').value);
+      if(isNaN(v)||v<0){toast('Enter income as a number, like 450.');return}
+      v=Math.round(v*100)/100;
+      while(d<p[2]){await db.collection('nights').doc(sid(p[0],d)).update({income:v});d=addDays(d,1)}
+      toast('Income updated');
+    }
+  }catch(err){toast('Could not save. You may have view-only access.')}
+});
+el('clear').addEventListener('click',function(){sel=null;setErr('');render()});
+function shift(n){M+=n;if(M<0){M=11;Y--}if(M>11){M=0;Y++}sel=null;render()}
+el('prev').onclick=function(){shift(-1)};el('next').onclick=function(){shift(1)};
+el('today').onclick=function(){var t=new Date();Y=t.getFullYear();M=t.getMonth();sel=null;render()};
+
+render();
+var timer=setTimeout(function(){if(!ready)el('livetxt').textContent='Can’t reach shared bookings yet. What you see may be out of date.'},10000);
+if(window.claude&&claude.use){
+  claude.use('db').then(function(d){
+    db=d;
+    if(!db){el('livetxt').textContent='Bookings are not connected yet. Check config.js.';return}
+    db.collection('nights').onSnapshot(function(snap){
+      var m={};
+      snap.docs.forEach(function(x){var v=x.data();if(v&&v.name)m[x.id]=v});
+      nights=m;ready=true;clearTimeout(timer);
+      el('live').className='live on';el('livetxt').textContent='Live: bookings and income refresh for everyone every few seconds';
+      render();
+    },function(){el('livetxt').textContent='Lost connection to shared bookings. Reload to reconnect.'});
+  });
+}else{el('livetxt').textContent='Bookings are not connected yet. Check config.js.'}
+})();
+</script>
+</body>
+</html>
