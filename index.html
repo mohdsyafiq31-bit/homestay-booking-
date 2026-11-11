@@ -67,6 +67,26 @@ ul.list small{color:var(--mute);display:block}
 .toast.on{opacity:1}
 @media (max-width:560px){form{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.pinc{display:none}
+@media print{
+  :root:root:root{--bg:#fff;--surface:#fff;--ink:#000;--mute:#444;--line:#999;--busy:#bcd0ee;--wknd:#eee;--accent:#1F5FBF;padding:0}
+  @page{size:A4 landscape;margin:10mm}
+  body{background:#fff;color:#000;font-size:12px}
+  main{max-width:none;padding:0}
+  .live,.legend,.toast,#pdf,#prev,#next,#today,.row-act,.sub,section[aria-label="Add booking"]{display:none!important}
+  .panel{border:0;padding:0;margin-bottom:10px;break-inside:avoid}
+  h1{font-size:22px;margin:0 0 6px}
+  .scroll{overflow:visible}
+  .grid{min-width:0;width:100%;grid-template-columns:80px repeat(var(--n),1fr)}
+  .cell,.block,.rn{min-height:30px}
+  .block,.cell.wk,.cell.sel{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .block{font-size:9px}
+  .dh,.rn span{font-size:9px}
+  .rn b{font-size:11px}
+  .income .big{font-size:26px}
+  ul.list li{break-inside:avoid;padding:6px 0}
+  .pinc{display:block;font-weight:700;white-space:nowrap}
+}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1F5FBF">
@@ -97,6 +117,7 @@ ul.list small{color:var(--mute);display:block}
       <button class="btn" id="prev" aria-label="Previous month">‹</button>
       <div class="date" id="mlabel" aria-live="polite"></div>
       <button class="btn" id="today">This month</button>
+      <button class="btn" id="pdf">Save as PDF</button>
       <button class="btn" id="next" aria-label="Next month">›</button>
     </div>
     <div class="scroll"><div class="grid" id="grid" role="grid"></div></div>
@@ -211,7 +232,7 @@ function render(){
   el('list').innerHTML=rows.length?rows.map(function(b){
     var key=esc(b.type+'|'+b.start+'|'+b.end),n=nightsIn(b.start,addDays(b.end,-1));
     return '<li><div><b>'+esc(b.name)+'</b> · '+tname(b.type)+'<small>Check-in '+fmt(b.start)+', 2 pm → Check-out '+fmt(b.end)+', 12 noon · '+n+(n===1?' night':' nights')+(b.notes?' · '+esc(b.notes):'')+'</small></div>'+
-    '<div class="row-act"><span class="hint">MYR</span><input type="number" min="0" step="0.01" value="'+(+b.income||0)+'" aria-label="Income for '+esc(b.name)+'"><button class="btn" data-inc="'+key+'">Update income</button><button class="btn" data-cancel="'+key+'">Cancel booking</button></div></li>'}).join(''):'<li><span class="hint">'+(ready?'No bookings in this month yet. Select a free night above to add the first one.':'Loading bookings…')+'</span></li>';
+    '<span class="pinc">'+money(+b.income||0)+'</span><div class="row-act"><span class="hint">MYR</span><input type="number" min="0" step="0.01" value="'+(+b.income||0)+'" aria-label="Income for '+esc(b.name)+'"><button class="btn" data-inc="'+key+'">Update income</button><button class="btn" data-cancel="'+key+'">Cancel booking</button></div></li>'}).join(''):'<li><span class="hint">'+(ready?'No bookings in this month yet. Select a free night above to add the first one.':'Loading bookings…')+'</span></li>';
 }
 function updateWa(){
   var t='Homestay request: '+tname(sel.t)+', check-in '+fmt(sel.a)+' 2 pm, check-out '+fmt(addDays(sel.b,1))+' 12 noon. Name: '+(el('name').value||'—');
@@ -280,6 +301,9 @@ el('list').addEventListener('click',async function(e){
 el('clear').addEventListener('click',function(){sel=null;setErr('');render()});
 function shift(n){M+=n;if(M<0){M=11;Y--}if(M>11){M=0;Y++}sel=null;render()}
 el('prev').onclick=function(){shift(-1)};el('next').onclick=function(){shift(1)};
+var origTitle=document.title;
+window.addEventListener('afterprint',function(){document.title=origTitle});
+el('pdf').onclick=function(){document.title='Homestay Calendar - '+el('mlabel').textContent;window.print()};
 el('today').onclick=function(){var t=new Date();Y=t.getFullYear();M=t.getMonth();sel=null;render()};
 
 render();
