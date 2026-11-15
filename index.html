@@ -68,6 +68,20 @@ ul.list small{color:var(--mute);display:block}
 .toast.on{opacity:1}
 @media (max-width:560px){form{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
+select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:9px 10px;width:100%}
+.tabs{display:flex;gap:8px;margin-bottom:16px}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 20px;font-weight:700}
+.tab.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.agform{display:grid;gap:12px;grid-template-columns:1fr 1fr auto;align-items:end;margin-bottom:12px}
+.row-act select{width:auto;max-width:150px;padding:7px 8px}
+.row-act .cr{width:80px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border-bottom:1px solid var(--line);padding:8px;text-align:left;white-space:nowrap}
+th.n,td.n{text-align:right}
+.st{margin-bottom:24px}
+.st h3{margin:0;font-size:20px}
+.stsub{margin:2px 0 10px;color:var(--mute)}
+@media (max-width:560px){.agform{grid-template-columns:1fr}}
 .pinc{display:none}
 @media print{
   :root:root:root{--bg:#fff;--surface:#fff;--ink:#000;--mute:#444;--line:#999;--busy:#bcd0ee;--wknd:#eee;--accent:#1F5FBF;padding:0}
@@ -87,6 +101,9 @@ ul.list small{color:var(--mute);display:block}
   .income .big{font-size:26px}
   ul.list li{break-inside:avoid;padding:6px 0}
   .pinc{display:block;font-weight:700;white-space:nowrap}
+  #tabs,section[aria-label="Agents"],#tab-com .bar{display:none!important}
+  .st{break-after:page;margin:0 0 16px}.st:last-child{break-after:auto}
+  table{font-size:12px}th,td{padding:4px 6px}
 }
 </style>
 <link rel="manifest" href="manifest.webmanifest">
@@ -101,11 +118,14 @@ ul.list small{color:var(--mute);display:block}
   <h1>Homestay Calendar</h1>
   <p class="sub">Check-in is 2 pm and check-out is 12 noon the next day. Each column is a night: it runs from 2 pm that date to noon the next day. Booking a night blocks that room for everyone.</p>
   <div class="live" id="live" role="status"><i></i><span id="livetxt">Connecting to shared bookings…</span></div>
+  <div class="tabs" id="tabs"><button class="tab on" data-tab="cal">Calendar</button><button class="tab" data-tab="com">Commission</button></div>
+  <div id="tab-cal">
 
   <section class="panel" aria-label="Monthly income">
     <div class="income">
       <div><small id="incLabel">Income this month</small><div class="big" id="inc">MYR 0</div></div>
       <div><small>Bookings</small><b id="cnt">0</b></div>
+      <div><small>Commission</small><b id="comm">MYR 0</b></div>
       <div><small>Nights booked</small><b id="nts">0</b></div>
       <div><small>Occupancy</small><b id="occ">0%</b></div>
     </div>
@@ -133,6 +153,8 @@ ul.list small{color:var(--mute);display:block}
       <form id="form" novalidate>
         <label>Booking name<input type="text" id="name" autocomplete="name"></label>
         <label>Income for this booking (MYR)<input type="number" id="income" min="0" step="0.01" inputmode="decimal"></label>
+        <label>Commission agent<select id="agent"></select></label>
+        <label>Commission %<input type="number" id="rate" min="0" max="100" step="0.01" inputmode="decimal"></label>
         <label class="full">Notes (optional)<textarea id="notes" rows="2"></textarea></label>
         <p class="msg full" id="err" role="alert" hidden></p>
         <div class="full">
@@ -148,6 +170,31 @@ ul.list small{color:var(--mute);display:block}
     <h2>Bookings this month</h2>
     <ul class="list" id="list"></ul>
   </section>
+  </div>
+  <div id="tab-com" hidden>
+    <section class="panel" aria-label="Agents">
+      <h2>Commission agents</h2>
+      <form id="agform" class="agform" novalidate>
+        <label>Agent name<input type="text" id="agname"></label>
+        <label>Default commission %<input type="number" id="agrate" min="0" max="100" step="0.01" inputmode="decimal"></label>
+        <button class="btn primary" type="submit">Add or update agent</button>
+      </form>
+      <p class="msg" id="agerr" role="alert" hidden></p>
+      <p class="hint" style="font-size:13px;margin-bottom:8px">The rate is saved on each booking when you add it, so changing an agent’s default does not change past bookings.</p>
+      <ul class="list" id="aglist"></ul>
+    </section>
+    <section class="panel" aria-label="Commission statement">
+      <div class="bar">
+        <button class="btn" id="cprev" aria-label="Previous month">‹</button>
+        <div class="date" id="cmonth" aria-live="polite"></div>
+        <button class="btn" id="cnext" aria-label="Next month">›</button>
+        <select id="cagent" aria-label="Agent" style="width:auto;min-width:150px"></select>
+        <button class="btn primary" id="cpdf">Save as PDF</button>
+      </div>
+      <p class="stsub" id="stsum"></p>
+      <div id="stmt"></div>
+    </section>
+  </div>
 </main>
 <div class="toast" id="toast" role="status"></div>
 
@@ -162,7 +209,7 @@ var TYPES=[
 ];
 var TAB=Math.random().toString(36).slice(2);
 var now=new Date(),Y=now.getFullYear(),M=now.getMonth();
-var db=null,nights={},sel=null,busy=false,ready=false;
+var db=null,nights={},agents=[],sel=null,busy=false,ready=false;
 
 function pad(n){return n<10?'0'+n:''+n}
 function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
@@ -186,6 +233,7 @@ function toast(t){var x=el('toast');x.textContent=t;x.classList.add('on');clearT
 function render(){
   var N=mdays(),mn=new Date(Y,M,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
   el('mlabel').textContent=mn;
+  renderCom();
   var g='<div class="rn" style="border-top:0"></div>';
   for(var d=1;d<=N;d++){var wd=new Date(Y,M,d);g+='<div class="dh"><b>'+d+'</b>'+wd.toLocaleDateString(undefined,{weekday:'narrow'})+'</div>'}
   TYPES.forEach(function(t){
@@ -214,26 +262,26 @@ function render(){
     updateWa();
   }
 
-  var seen={},rows=[],inc=0,cnt=0,nt=0,per={};
+  var seen={},rows=[],inc=0,cnt=0,nt=0,per={},comm=0;
   Object.keys(nights).forEach(function(k){
     var b=nights[k];
     if(b.date.indexOf(mpre())===0)nt++;
     if(!seen[b.bid]&&b.date===b.start){
       seen[b.bid]=1;
-      if(b.start.indexOf(mpre())===0){var v=+b.income||0;inc+=v;cnt++;per[b.type]=(per[b.type]||0)+v}
+      if(b.start.indexOf(mpre())===0){var v=+b.income||0;inc+=v;comm+=com(b);cnt++;per[b.type]=(per[b.type]||0)+v}
     }
   });
   var seen2={};
   Object.keys(nights).forEach(function(k){var b=nights[k];if(b.date.indexOf(mpre())===0&&!seen2[b.bid]){seen2[b.bid]=1;rows.push(b)}});
   rows.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
   el('incLabel').textContent='Income in '+mn;
-  el('inc').textContent=money(inc);el('cnt').textContent=cnt;el('nts').textContent=nt;
+  el('inc').textContent=money(inc);el('comm').textContent=money(comm);el('cnt').textContent=cnt;el('nts').textContent=nt;
   el('occ').textContent=Math.round(nt/(TYPES.length*N)*100)+'%';
   el('types').innerHTML=TYPES.map(function(t){return '<div><span>'+t.name+'</span> <b>'+money(per[t.id]||0)+'</b></div>'}).join('');
-  el('list').innerHTML=rows.length?rows.map(function(b){
+  if(!el('list').contains(document.activeElement))el('list').innerHTML=rows.length?rows.map(function(b){
     var key=esc(b.type+'|'+b.start+'|'+b.end),n=nightsIn(b.start,addDays(b.end,-1));
-    return '<li><div><b>'+esc(b.name)+'</b> · '+tname(b.type)+'<small>Check-in '+fmt(b.start)+', 2 pm → Check-out '+fmt(b.end)+', 12 noon · '+n+(n===1?' night':' nights')+(b.notes?' · '+esc(b.notes):'')+'</small></div>'+
-    '<span class="pinc">'+money(+b.income||0)+'</span><div class="row-act"><span class="hint">MYR</span><input type="number" min="0" step="0.01" value="'+(+b.income||0)+'" aria-label="Income for '+esc(b.name)+'"><button class="btn" data-inc="'+key+'">Update income</button><button class="btn" data-cancel="'+key+'">Cancel booking</button></div></li>'}).join(''):'<li><span class="hint">'+(ready?'No bookings in this month yet. Select a free night above to add the first one.':'Loading bookings…')+'</span></li>';
+    return '<li><div><b>'+esc(b.name)+'</b> · '+tname(b.type)+'<small>Check-in '+fmt(b.start)+', 2 pm → Check-out '+fmt(b.end)+', 12 noon · '+n+(n===1?' night':' nights')+(b.notes?' · '+esc(b.notes):'')+(b.agent?' · Agent '+esc(b.agent)+' '+(+b.rate||0)+'% = '+money(com(b)):'')+'</small></div>'+
+    '<span class="pinc">'+money(+b.income||0)+'</span><div class="row-act"><span class="hint">MYR</span><input type="number" min="0" step="0.01" value="'+(+b.income||0)+'" aria-label="Income for '+esc(b.name)+'"><button class="btn" data-inc="'+key+'">Update income</button><select class="ca" aria-label="Agent for '+esc(b.name)+'">'+listOptions(b.agent||'')+'</select><input class="cr" type="number" min="0" max="100" step="0.01" value="'+(+b.rate||0)+'" aria-label="Commission percent for '+esc(b.name)+'"><button class="btn" data-comm="'+key+'">Update commission</button><button class="btn" data-cancel="'+key+'">Cancel booking</button></div></li>'}).join(''):'<li><span class="hint">'+(ready?'No bookings in this month yet. Select a free night above to add the first one.':'Loading bookings…')+'</span></li>';
 }
 function updateWa(){
   var t='Homestay request: '+tname(sel.t)+', check-in '+fmt(sel.a)+' 2 pm, check-out '+fmt(addDays(sel.b,1))+' 12 noon. Name: '+(el('name').value||'—');
@@ -262,7 +310,7 @@ async function book(s,info){
       if(!a.acquired)throw 'clash';
       var snap=await ref.get(),x=snap.exists&&snap.data();
       if(x&&x.name)throw 'clash';
-      await ref.set({type:s.t,date:d,start:s.a,end:addDays(s.b,1),bid:bid,name:info.name,income:info.income,notes:info.notes});
+      await ref.set({type:s.t,date:d,start:s.a,end:addDays(s.b,1),bid:bid,name:info.name,income:info.income,notes:info.notes,agent:info.agent||'',rate:info.rate||0});
       claimed.push(ref);d=addDays(d,1);
     }
     return 'ok';
@@ -278,18 +326,23 @@ el('form').addEventListener('submit',async function(e){
   if(raw===''||isNaN(inc)||inc<0){setErr('Enter the income as a number, like 450. Use 0 if there is none.');return}
   if(!db){setErr('Shared bookings are not connected. Reload the page, or send your request on WhatsApp.');return}
   busy=true;el('go').disabled=true;setErr('');
-  var res=await book(sel,{name:n,income:Math.round(inc*100)/100,notes:el('notes').value.trim()});
+  var res=await book(sel,{name:n,income:Math.round(inc*100)/100,notes:el('notes').value.trim(),agent:el('agent').value,rate:el('agent').value?Math.min(100,Math.max(0,parseFloat(el('rate').value)||0)):0});
   busy=false;el('go').disabled=false;
-  if(res==='ok'){sel=null;el('name').value='';el('income').value='';el('notes').value='';render();toast('Booking saved')}
+  if(res==='ok'){sel=null;el('name').value='';el('income').value='';el('notes').value='';el('agent').value='';el('rate').value='';render();toast('Booking saved')}
   else if(res==='clash'){sel=null;render();toast('Someone just booked one of those nights. Pick other dates.')}
   else setErr('Could not save. You may have view-only access, so ask the page owner to invite you as an editor, or send a request on WhatsApp.');
 });
 el('list').addEventListener('click',async function(e){
-  var c=e.target.getAttribute('data-cancel'),u=e.target.getAttribute('data-inc');
-  if(!db||(!c&&!u))return;
-  var p=(c||u).split('|'),d=p[1];
+  var c=e.target.getAttribute('data-cancel'),u=e.target.getAttribute('data-inc'),m=e.target.getAttribute('data-comm');
+  if(!db||(!c&&!u&&!m))return;
+  var p=(c||u||m).split('|'),d=p[1];
   try{
-    if(c){while(d<p[2]){await db.collection('nights').doc(sid(p[0],d)).delete();d=addDays(d,1)}toast('Booking cancelled')}
+    if(m){
+      var par=e.target.parentNode,ag=par.querySelector('.ca').value,rt=parseFloat(par.querySelector('.cr').value);
+      if(!(rt>=0&&rt<=100))rt=0;
+      while(d<p[2]){await db.collection('nights').doc(sid(p[0],d)).update({agent:ag,rate:rt});d=addDays(d,1)}
+      toast('Commission updated');
+    }else if(c){while(d<p[2]){await db.collection('nights').doc(sid(p[0],d)).delete();d=addDays(d,1)}toast('Booking cancelled')}
     else{
       var v=parseFloat(e.target.parentNode.querySelector('input').value);
       if(isNaN(v)||v<0){toast('Enter income as a number, like 450.');return}
@@ -307,12 +360,71 @@ window.addEventListener('afterprint',function(){document.title=origTitle});
 el('pdf').onclick=function(){document.title='Homestay Calendar - '+el('mlabel').textContent;window.print()};
 el('today').onclick=function(){var t=new Date();Y=t.getFullYear();M=t.getMonth();sel=null;render()};
 
+function byName(a,b){return a.name<b.name?-1:a.name>b.name?1:0}
+function com(b){return Math.round((+b.income||0)*(+b.rate||0))/100}
+function agentNames(){var s={};agents.forEach(function(a){s[a.name]=1});Object.keys(nights).forEach(function(k){var a=nights[k].agent;if(a)s[a]=1});return Object.keys(s).sort()}
+function opt(v,l,sv){return '<option value="'+esc(v)+'"'+(v===sv?' selected':'')+'>'+esc(l)+'</option>'}
+function listOptions(sv){return opt('','No agent',sv)+agentNames().map(function(n){return opt(n,n,sv)}).join('')}
+var lastSig='';
+function refreshSelects(){
+  var names=agentNames(),sig=JSON.stringify([agents,names]);
+  if(sig===lastSig)return;lastSig=sig;
+  var f=el('agent'),fv=f.value;
+  f.innerHTML=opt('','No agent',fv)+agents.map(function(a){return opt(a.name,a.name,fv)}).join('');
+  var c=el('cagent'),cv=c.value||'*';
+  c.innerHTML=opt('*','All agents',cv)+names.map(function(n){return opt(n,n,cv)}).join('');
+}
+function showA(t){var e=el('agerr');e.textContent=t||'';e.hidden=!t}
+function renderCom(){
+  refreshSelects();
+  var ml=new Date(Y,M,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  el('cmonth').textContent=ml;
+  el('aglist').innerHTML=agents.length?agents.map(function(a){var n=esc(a.name);return '<li><div><b>'+n+'</b><small>Default commission '+a.rate+'%</small></div><div class="row-act"><button class="btn" data-agedit="'+n+'">Edit</button><button class="btn" data-agdel="'+n+'">Remove</button></div></li>'}).join(''):'<li><span class="hint">No agents yet. Add the first one above.</span></li>';
+  var by={},seen={};
+  Object.keys(nights).forEach(function(k){var b=nights[k];if(b.date===b.start&&b.start.indexOf(mpre())===0&&b.agent&&!seen[b.bid]){seen[b.bid]=1;(by[b.agent]=by[b.agent]||[]).push(b)}});
+  var pick=el('cagent').value||'*';
+  var names=Object.keys(by).sort().filter(function(n){return pick==='*'||n===pick}),grand=0;
+  var html=names.map(function(n){
+    var rs=by[n].sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0}),ti=0,tc=0;
+    var body=rs.map(function(b){var c=com(b),k=nightsIn(b.start,addDays(b.end,-1));ti+=+b.income||0;tc+=c;
+      return '<tr><td>'+fmt(b.start)+'</td><td>'+fmt(b.end)+'</td><td>'+esc(tname(b.type))+'</td><td>'+esc(b.name)+'</td><td class="n">'+k+'</td><td class="n">'+money(+b.income||0)+'</td><td class="n">'+(+b.rate||0)+'%</td><td class="n"><b>'+money(c)+'</b></td></tr>'}).join('');
+    grand+=tc;
+    return '<div class="st"><h3>Commission statement</h3><p class="stsub"><b>'+esc(n)+'</b> · '+ml+'</p><div class="scroll"><table><thead><tr><th>Check-in</th><th>Check-out</th><th>Room type</th><th>Guest</th><th class="n">Nights</th><th class="n">Income</th><th class="n">Rate</th><th class="n">Commission</th></tr></thead><tbody>'+body+'</tbody><tfoot><tr><td colspan="5"><b>Total</b></td><td class="n"><b>'+money(ti)+'</b></td><td></td><td class="n"><b>'+money(tc)+'</b></td></tr></tfoot></table></div><p class="hint" style="font-size:13px">Counted in the month of check-in. Commission = income × rate.</p></div>';
+  }).join('');
+  el('stmt').innerHTML=html||'<p class="hint">No bookings with an agent in '+ml+'.</p>';
+  el('stsum').innerHTML=names.length>1?'<b>Total commission, all agents: '+money(grand)+'</b>':'';
+}
+el('tabs').addEventListener('click',function(e){
+  var t=e.target.getAttribute('data-tab');if(!t)return;
+  el('tab-cal').hidden=t!=='cal';el('tab-com').hidden=t!=='com';
+  Array.prototype.forEach.call(this.children,function(b){b.classList.toggle('on',b.getAttribute('data-tab')===t)});
+});
+el('agent').addEventListener('change',function(){var a=agents.filter(function(x){return x.name===el('agent').value})[0];el('rate').value=a?a.rate:''});
+el('cagent').addEventListener('change',renderCom);
+el('cprev').onclick=function(){shift(-1)};el('cnext').onclick=function(){shift(1)};
+el('cpdf').onclick=function(){var a=el('cagent').value;document.title='Commission - '+(a==='*'||!a?'All agents':a)+' - '+el('cmonth').textContent;window.print()};
+el('agform').addEventListener('submit',async function(e){
+  e.preventDefault();
+  var n=el('agname').value.trim(),r=parseFloat(el('agrate').value);
+  if(!n){showA('Enter the agent’s name.');return}
+  if(isNaN(r)||r<0||r>100){showA('Enter a default commission between 0 and 100.');return}
+  if(!db){showA('Bookings are not connected yet.');return}
+  try{await db.collection('agents').doc(n).set({rate:r});el('agname').value='';el('agrate').value='';showA('');toast('Agent saved')}
+  catch(err){showA('Could not save. Check the staff passcode, and that update_schema.sql was run in Supabase.')}
+});
+el('aglist').addEventListener('click',async function(e){
+  var ed=e.target.getAttribute('data-agedit'),dl=e.target.getAttribute('data-agdel');
+  if(ed){var a=agents.filter(function(x){return x.name===ed})[0];el('agname').value=ed;el('agrate').value=a?a.rate:'';el('agname').focus();return}
+  if(dl&&db){try{await db.collection('agents').doc(dl).delete();toast('Agent removed. Past bookings keep the name.')}catch(err){toast('Could not remove. Check the staff passcode.')}}
+});
+
 render();
 var timer=setTimeout(function(){if(!ready)el('livetxt').textContent='Can’t reach shared bookings yet. What you see may be out of date.'},10000);
 if(window.claude&&claude.use){
   claude.use('db').then(function(d){
     db=d;
     if(!db){el('livetxt').textContent='Bookings are not connected yet. Check config.js.';return}
+    db.collection('agents').onSnapshot(function(snap){agents=snap.docs.map(function(x){return {name:x.id,rate:+x.data().rate||0}}).sort(byName);render()});
     db.collection('nights').onSnapshot(function(snap){
       var m={};
       snap.docs.forEach(function(x){var v=x.data();if(v&&v.name)m[x.id]=v});

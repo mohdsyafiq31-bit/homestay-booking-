@@ -2,7 +2,7 @@
 (function () {
   var C = window.HS_CONFIG || {};
   var base = String(C.supabaseUrl || '').replace(/\/$/, ''), key = C.supabaseAnonKey || '';
-  var PK = 'hs-pass', cb = null, started = false;
+  var PK = 'hs-pass', cbs = {}, polled = {}, timer = null;
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
   if (!base || !key || base.indexOf('YOUR-') > -1 || key.indexOf('YOUR-') > -1) {
     window.claude = { use: async function () { return null; } };
@@ -24,34 +24,48 @@
     if (r.status === 409) throw 'clash';
     if (!r.ok) throw new Error('HTTP ' + r.status);
   }
-  async function poll() {
-    if (document.hidden && started === 'done') return;
+  var SEL = { nights: 'id,data', agents: 'name,rate' }, ORD = { nights: 'id', agents: 'name' };
+  async function poll(table) {
+    if (!cbs[table] || (document.hidden && polled[table])) return;
     try {
       var rows = [], from = 0;
       for (;;) {
         var h = headers(); h['Range-Unit'] = 'items'; h.Range = from + '-' + (from + 999);
-        var r = await fetch(base + '/rest/v1/nights?select=id,data&order=id', { headers: h });
+        var r = await fetch(base + '/rest/v1/' + table + '?select=' + SEL[table] + '&order=' + ORD[table], { headers: h });
         if (!r.ok) return;
         var a = await r.json(); rows = rows.concat(a);
         if (a.length < 1000) break;
         from += 1000;
       }
-      if (cb) cb({ docs: rows.map(function (x) { return { id: x.id, data: function () { return x.data; } }; }) });
+      polled[table] = true;
+      cbs[table]({ docs: rows.map(function (x) {
+        return table === 'agents' ? { id: x.name, data: function () { return { rate: x.rate }; } }
+                                  : { id: x.id, data: function () { return x.data; } };
+      }) });
     } catch (e) {}
   }
-  function ref(id) {
+  function pollAll() { poll('nights'); poll('agents'); }
+  function ref(table, id) {
+    if (table === 'agents') return {
+      set: async function (d) { await rpc('save_agent', { p_name: id, p_rate: d.rate }); pollAll(); },
+      delete: async function () { await rpc('delete_agent', { p_name: id }); pollAll(); }
+    };
     return {
       acquire: async function () { return { acquired: true }; },
       get: async function () { return { exists: false, data: function () {} }; },
-      set: async function (d) { await rpc('book_night', { p_id: id, p_data: d }); poll(); },
-      update: async function (d) { await rpc('update_income', { p_id: id, p_income: d.income }); poll(); },
-      delete: async function () { await rpc('cancel_night', { p_id: id }); poll(); }
+      set: async function (d) { await rpc('book_night', { p_id: id, p_data: d }); pollAll(); },
+      update: async function (d) {
+        if (d.agent !== undefined) await rpc('set_commission', { p_id: id, p_agent: d.agent, p_rate: d.rate });
+        else await rpc('update_income', { p_id: id, p_income: d.income });
+        pollAll();
+      },
+      delete: async function () { await rpc('cancel_night', { p_id: id }); pollAll(); }
     };
   }
-  var db = { collection: function () {
-    return { doc: ref, onSnapshot: function (next) {
-      cb = next; poll();
-      if (!started) { started = true; setInterval(poll, 8000); }
+  var db = { collection: function (name) {
+    return { doc: function (id) { return ref(name, id); }, onSnapshot: function (next) {
+      cbs[name] = next; poll(name);
+      if (!timer) timer = setInterval(pollAll, 8000);
       return function () {};
     } };
   } };
