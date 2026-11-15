@@ -39,7 +39,8 @@ button{cursor:pointer}
 .grid{display:grid;grid-template-columns:150px repeat(var(--n),minmax(36px,1fr));min-width:calc(150px + var(--n)*36px)}
 .dh{text-align:center;font-size:12px;color:var(--mute);border-left:1px solid var(--line);padding-bottom:4px;line-height:1.2}
 .dh b{display:block;font-size:14px;color:var(--ink)}
-.rn{padding:8px 8px 8px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;justify-content:center}
+.rn{padding:8px 8px 8px 4px;border-top:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;position:sticky;left:0;z-index:2;background:var(--surface);box-shadow:1px 0 0 var(--line)}
+@media (max-width:560px){.grid{grid-template-columns:105px repeat(var(--n),minmax(36px,1fr));min-width:calc(105px + var(--n)*36px)}}
 .rn b{font-size:15px}
 .rn span{font-size:12.5px;color:var(--mute)}
 .cell,.block{min-height:52px;border:0;border-top:1px solid var(--line);border-left:1px solid var(--line);padding:2px 4px}
@@ -185,7 +186,7 @@ function toast(t){var x=el('toast');x.textContent=t;x.classList.add('on');clearT
 function render(){
   var N=mdays(),mn=new Date(Y,M,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
   el('mlabel').textContent=mn;
-  var g='<div></div>';
+  var g='<div class="rn" style="border-top:0"></div>';
   for(var d=1;d<=N;d++){var wd=new Date(Y,M,d);g+='<div class="dh"><b>'+d+'</b>'+wd.toLocaleDateString(undefined,{weekday:'narrow'})+'</div>'}
   TYPES.forEach(function(t){
     g+='<div class="rn" role="rowheader"><b>'+t.name+'</b><span>Type '+t.n+'</span></div>';
