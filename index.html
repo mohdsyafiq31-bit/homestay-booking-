@@ -81,7 +81,9 @@ th.n,td.n{text-align:right}
 .st{margin-bottom:24px}
 .st h3{margin:0;font-size:20px}
 .stsub{margin:2px 0 10px;color:var(--mute)}
-@media (max-width:560px){.agform{grid-template-columns:1fr}}
+.xform{display:grid;gap:12px;grid-template-columns:150px 160px 1fr 140px auto;align-items:end;margin-bottom:12px}
+@media (max-width:760px){.xform{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.agform,.xform{grid-template-columns:1fr}}
 .pinc{display:none}
 @media print{
   :root:root:root{--bg:#fff;--surface:#fff;--ink:#000;--mute:#444;--line:#999;--busy:#bcd0ee;--wknd:#eee;--accent:#1F5FBF;padding:0}
@@ -101,7 +103,7 @@ th.n,td.n{text-align:right}
   .income .big{font-size:26px}
   ul.list li{break-inside:avoid;padding:6px 0}
   .pinc{display:block;font-weight:700;white-space:nowrap}
-  #tabs,section[aria-label="Agents"],#tab-com .bar{display:none!important}
+  #tabs,section[aria-label="Agents"],#tab-com .bar,#tab-mnt .bar,#xform,.xdel,#editbox{display:none!important}
   .st{break-after:page;margin:0 0 16px}.st:last-child{break-after:auto}
   table{font-size:12px}th,td{padding:4px 6px}
 }
@@ -118,7 +120,7 @@ th.n,td.n{text-align:right}
   <h1>Homestay Calendar</h1>
   <p class="sub">Check-in is 2 pm and check-out is 12 noon the next day. Each column is a night: it runs from 2 pm that date to noon the next day. Booking a night blocks that room for everyone.</p>
   <div class="live" id="live" role="status"><i></i><span id="livetxt">Connecting to shared bookings…</span></div>
-  <div class="tabs" id="tabs"><button class="tab on" data-tab="cal">Calendar</button><button class="tab" data-tab="com">Commission</button></div>
+  <div class="tabs" id="tabs"><button class="tab on" data-tab="cal">Calendar</button><button class="tab" data-tab="com">Commission</button><button class="tab" data-tab="mnt">Maintenance</button></div>
   <div id="tab-cal">
 
   <section class="panel" aria-label="Monthly income">
@@ -155,6 +157,7 @@ th.n,td.n{text-align:right}
         <label>Income for this booking (MYR)<input type="number" id="income" min="0" step="0.01" inputmode="decimal"></label>
         <label>Commission agent<select id="agent"></select></label>
         <label>Commission %<input type="number" id="rate" min="0" max="100" step="0.01" inputmode="decimal"></label>
+        <label>Cleaning fee (MYR)<input type="number" id="clean" min="0" step="0.01" inputmode="decimal"></label>
         <label class="full">Notes (optional)<textarea id="notes" rows="2"></textarea></label>
         <p class="msg full" id="err" role="alert" hidden></p>
         <div class="full">
@@ -166,6 +169,21 @@ th.n,td.n{text-align:right}
     </div>
   </section>
 
+  <section class="panel" id="editbox" aria-label="Edit booking" hidden>
+    <h2>Edit booking</h2>
+    <div class="summary" id="esum"></div>
+    <form id="eform" novalidate>
+      <label>Booking name<input type="text" id="ename"></label>
+      <label>Income (MYR)<input type="number" id="eincome" min="0" step="0.01" inputmode="decimal"></label>
+      <label>Commission agent<select id="eagent"></select></label>
+      <label>Commission %<input type="number" id="erate" min="0" max="100" step="0.01" inputmode="decimal"></label>
+      <label>Cleaning fee (MYR)<input type="number" id="eclean" min="0" step="0.01" inputmode="decimal"></label>
+      <label class="full">Notes<textarea id="enotes" rows="2"></textarea></label>
+      <p class="msg full" id="eerr" role="alert" hidden></p>
+      <div class="full"><button class="btn primary" type="submit">Save changes</button> <button class="btn" type="button" id="ecancel">Close</button></div>
+    </form>
+    <p class="hint" style="font-size:13px;margin-top:10px">To change the dates or room, cancel the booking and add it again.</p>
+  </section>
   <section class="panel" aria-label="Bookings">
     <h2>Bookings this month</h2>
     <ul class="list" id="list"></ul>
@@ -195,6 +213,36 @@ th.n,td.n{text-align:right}
       <div id="stmt"></div>
     </section>
   </div>
+  <div id="tab-mnt" hidden>
+    <section class="panel" aria-label="Expense summary">
+      <div class="bar">
+        <button class="btn" id="mprev" aria-label="Previous month">‹</button>
+        <div class="date" id="mmonth" aria-live="polite"></div>
+        <button class="btn" id="mnext" aria-label="Next month">›</button>
+        <button class="btn primary" id="mpdf">Save as PDF</button>
+      </div>
+      <h2>Maintenance and expenses</h2>
+      <p class="stsub" id="msub"></p>
+      <div class="income"><div><small id="mtlabel">Total expenses</small><div class="big" id="mtotal">MYR 0</div></div></div>
+      <div class="types" id="mbreak"></div>
+    </section>
+    <section class="panel" aria-label="Cleaning fees">
+      <h2>Cleaning fees</h2>
+      <div id="mclean"></div>
+    </section>
+    <section class="panel" aria-label="Other expenses">
+      <h2>Maintenance, utilities and other expenses</h2>
+      <form id="xform" class="xform" novalidate>
+        <label>Date<input type="date" id="xdate"></label>
+        <label>Category<select id="xcat"></select></label>
+        <label>Description<input type="text" id="xdesc" placeholder="e.g. Electricity bill"></label>
+        <label>Amount (MYR)<input type="number" id="xamt" min="0" step="0.01" inputmode="decimal"></label>
+        <button class="btn primary" type="submit">Add expense</button>
+      </form>
+      <p class="msg" id="xerr" role="alert" hidden></p>
+      <div id="xlist"></div>
+    </section>
+  </div>
 </main>
 <div class="toast" id="toast" role="status"></div>
 
@@ -209,7 +257,7 @@ var TYPES=[
 ];
 var TAB=Math.random().toString(36).slice(2);
 var now=new Date(),Y=now.getFullYear(),M=now.getMonth();
-var db=null,nights={},agents=[],sel=null,busy=false,ready=false;
+var db=null,nights={},agents=[],expenses=[],editing=null,sel=null,busy=false,ready=false;
 
 function pad(n){return n<10?'0'+n:''+n}
 function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
@@ -233,7 +281,7 @@ function toast(t){var x=el('toast');x.textContent=t;x.classList.add('on');clearT
 function render(){
   var N=mdays(),mn=new Date(Y,M,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
   el('mlabel').textContent=mn;
-  renderCom();
+  renderCom();renderMnt();
   var g='<div class="rn" style="border-top:0"></div>';
   for(var d=1;d<=N;d++){var wd=new Date(Y,M,d);g+='<div class="dh"><b>'+d+'</b>'+wd.toLocaleDateString(undefined,{weekday:'narrow'})+'</div>'}
   TYPES.forEach(function(t){
@@ -280,8 +328,8 @@ function render(){
   el('types').innerHTML=TYPES.map(function(t){return '<div><span>'+t.name+'</span> <b>'+money(per[t.id]||0)+'</b></div>'}).join('');
   if(!el('list').contains(document.activeElement))el('list').innerHTML=rows.length?rows.map(function(b){
     var key=esc(b.type+'|'+b.start+'|'+b.end),n=nightsIn(b.start,addDays(b.end,-1));
-    return '<li><div><b>'+esc(b.name)+'</b> · '+tname(b.type)+'<small>Check-in '+fmt(b.start)+', 2 pm → Check-out '+fmt(b.end)+', 12 noon · '+n+(n===1?' night':' nights')+(b.notes?' · '+esc(b.notes):'')+(b.agent?' · Agent '+esc(b.agent)+' '+(+b.rate||0)+'% = '+money(com(b)):'')+'</small></div>'+
-    '<span class="pinc">'+money(+b.income||0)+'</span><div class="row-act"><span class="hint">MYR</span><input type="number" min="0" step="0.01" value="'+(+b.income||0)+'" aria-label="Income for '+esc(b.name)+'"><button class="btn" data-inc="'+key+'">Update income</button><select class="ca" aria-label="Agent for '+esc(b.name)+'">'+listOptions(b.agent||'')+'</select><input class="cr" type="number" min="0" max="100" step="0.01" value="'+(+b.rate||0)+'" aria-label="Commission percent for '+esc(b.name)+'"><button class="btn" data-comm="'+key+'">Update commission</button><button class="btn" data-cancel="'+key+'">Cancel booking</button></div></li>'}).join(''):'<li><span class="hint">'+(ready?'No bookings in this month yet. Select a free night above to add the first one.':'Loading bookings…')+'</span></li>';
+    return '<li><div><b>'+esc(b.name)+'</b> · '+tname(b.type)+'<small>Check-in '+fmt(b.start)+', 2 pm → Check-out '+fmt(b.end)+', 12 noon · '+n+(n===1?' night':' nights')+(b.notes?' · '+esc(b.notes):'')+((+b.cleaning)?' · Cleaning '+money(+b.cleaning):'')+(b.agent?' · Agent '+esc(b.agent)+' '+(+b.rate||0)+'% = '+money(com(b)):'')+'</small></div>'+
+    '<span class="pinc">'+money(+b.income||0)+'</span><div class="row-act"><button class="btn" data-edit="'+key+'">Edit</button><button class="btn" data-cancel="'+key+'">Cancel booking</button></div></li>'}).join(''):'<li><span class="hint">'+(ready?'No bookings in this month yet. Select a free night above to add the first one.':'Loading bookings…')+'</span></li>';
 }
 function updateWa(){
   var t='Homestay request: '+tname(sel.t)+', check-in '+fmt(sel.a)+' 2 pm, check-out '+fmt(addDays(sel.b,1))+' 12 noon. Name: '+(el('name').value||'—');
@@ -310,7 +358,7 @@ async function book(s,info){
       if(!a.acquired)throw 'clash';
       var snap=await ref.get(),x=snap.exists&&snap.data();
       if(x&&x.name)throw 'clash';
-      await ref.set({type:s.t,date:d,start:s.a,end:addDays(s.b,1),bid:bid,name:info.name,income:info.income,notes:info.notes,agent:info.agent||'',rate:info.rate||0});
+      await ref.set({type:s.t,date:d,start:s.a,end:addDays(s.b,1),bid:bid,name:info.name,income:info.income,notes:info.notes,agent:info.agent||'',rate:info.rate||0,cleaning:info.cleaning||0});
       claimed.push(ref);d=addDays(d,1);
     }
     return 'ok';
@@ -326,14 +374,15 @@ el('form').addEventListener('submit',async function(e){
   if(raw===''||isNaN(inc)||inc<0){setErr('Enter the income as a number, like 450. Use 0 if there is none.');return}
   if(!db){setErr('Shared bookings are not connected. Reload the page, or send your request on WhatsApp.');return}
   busy=true;el('go').disabled=true;setErr('');
-  var res=await book(sel,{name:n,income:Math.round(inc*100)/100,notes:el('notes').value.trim(),agent:el('agent').value,rate:el('agent').value?Math.min(100,Math.max(0,parseFloat(el('rate').value)||0)):0});
+  var res=await book(sel,{name:n,income:Math.round(inc*100)/100,notes:el('notes').value.trim(),agent:el('agent').value,rate:el('agent').value?Math.min(100,Math.max(0,parseFloat(el('rate').value)||0)):0,cleaning:r2(Math.max(0,parseFloat(el('clean').value)||0))});
   busy=false;el('go').disabled=false;
-  if(res==='ok'){sel=null;el('name').value='';el('income').value='';el('notes').value='';el('agent').value='';el('rate').value='';render();toast('Booking saved')}
+  if(res==='ok'){sel=null;el('name').value='';el('income').value='';el('notes').value='';el('agent').value='';el('rate').value='';el('clean').value='';render();toast('Booking saved')}
   else if(res==='clash'){sel=null;render();toast('Someone just booked one of those nights. Pick other dates.')}
   else setErr('Could not save. You may have view-only access, so ask the page owner to invite you as an editor, or send a request on WhatsApp.');
 });
 el('list').addEventListener('click',async function(e){
-  var c=e.target.getAttribute('data-cancel'),u=e.target.getAttribute('data-inc'),m=e.target.getAttribute('data-comm');
+  var c=e.target.getAttribute('data-cancel'),u=e.target.getAttribute('data-inc'),m=e.target.getAttribute('data-comm'),ed=e.target.getAttribute('data-edit');
+  if(ed){openEdit(ed);return}
   if(!db||(!c&&!u&&!m))return;
   var p=(c||u||m).split('|'),d=p[1];
   try{
@@ -396,7 +445,7 @@ function renderCom(){
 }
 el('tabs').addEventListener('click',function(e){
   var t=e.target.getAttribute('data-tab');if(!t)return;
-  el('tab-cal').hidden=t!=='cal';el('tab-com').hidden=t!=='com';
+  el('tab-cal').hidden=t!=='cal';el('tab-com').hidden=t!=='com';el('tab-mnt').hidden=t!=='mnt';
   Array.prototype.forEach.call(this.children,function(b){b.classList.toggle('on',b.getAttribute('data-tab')===t)});
 });
 el('agent').addEventListener('change',function(){var a=agents.filter(function(x){return x.name===el('agent').value})[0];el('rate').value=a?a.rate:''});
@@ -418,12 +467,77 @@ el('aglist').addEventListener('click',async function(e){
   if(dl&&db){try{await db.collection('agents').doc(dl).delete();toast('Agent removed. Past bookings keep the name.')}catch(err){toast('Could not remove. Check the staff passcode.')}}
 });
 
+var CATS=['Maintenance','Utilities','Supplies','Other'];
+function r2(v){return Math.round(v*100)/100}
+function showE(t){var e=el('eerr');e.textContent=t||'';e.hidden=!t}
+function showX(t){var e=el('xerr');e.textContent=t||'';e.hidden=!t}
+function openEdit(key){
+  var p=key.split('|'),b=nights[sid(p[0],p[1])];if(!b)return;
+  editing=p;
+  el('esum').textContent=tname(b.type)+' · Check-in '+fmt(b.start)+' → Check-out '+fmt(b.end);
+  el('ename').value=b.name||'';el('eincome').value=+b.income||0;
+  el('eagent').innerHTML=listOptions(b.agent||'');el('erate').value=+b.rate||0;
+  el('eclean').value=+b.cleaning||0;el('enotes').value=b.notes||'';
+  showE('');el('editbox').hidden=false;el('editbox').scrollIntoView({block:'start'});
+}
+function renderMnt(){
+  var ml=new Date(Y,M,1).toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  el('mmonth').textContent=ml;el('msub').textContent=ml;
+  var seen={},bk=[];
+  Object.keys(nights).forEach(function(k){var b=nights[k];if(b.date===b.start&&b.start.indexOf(mpre())===0&&!seen[b.bid]&&(+b.cleaning||0)>0){seen[b.bid]=1;bk.push(b)}});
+  bk.sort(function(a,b){return a.start<b.start?-1:a.start>b.start?1:0});
+  var ct=0;
+  el('mclean').innerHTML=bk.length?'<div class="scroll"><table><thead><tr><th>Check-in</th><th>Check-out</th><th>Room type</th><th>Guest</th><th class="n">Cleaning fee</th></tr></thead><tbody>'+bk.map(function(b){ct+=+b.cleaning;return '<tr><td>'+fmt(b.start)+'</td><td>'+fmt(b.end)+'</td><td>'+esc(tname(b.type))+'</td><td>'+esc(b.name)+'</td><td class="n">'+money(+b.cleaning)+'</td></tr>'}).join('')+'</tbody><tfoot><tr><td colspan="4"><b>Total cleaning fees</b></td><td class="n"><b>'+money(r2(ct))+'</b></td></tr></tfoot></table></div><p class="hint" style="font-size:13px">Counted in the month of check-in, the same as income.</p>':'<p class="hint">No cleaning fees in '+ml+'. Enter one when you add or edit a booking.</p>';
+  var ex=expenses.filter(function(x){return x.date&&x.date.indexOf(mpre())===0}).sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0}),tot={};
+  CATS.forEach(function(c){tot[c]=0});
+  ex.forEach(function(x){tot[x.category]=(tot[x.category]||0)+x.amount});
+  var et=0;ex.forEach(function(x){et+=x.amount});
+  el('xlist').innerHTML=ex.length?'<div class="scroll"><table><thead><tr><th>Date</th><th>Category</th><th>Description</th><th class="n">Amount</th><th class="xdel"></th></tr></thead><tbody>'+ex.map(function(x){return '<tr><td>'+fmt(x.date)+'</td><td>'+esc(x.category)+'</td><td>'+esc(x.description||'')+'</td><td class="n">'+money(x.amount)+'</td><td class="xdel"><button class="btn" data-xdel="'+esc(x.id)+'">Delete</button></td></tr>'}).join('')+'</tbody><tfoot><tr><td colspan="3"><b>Total other expenses</b></td><td class="n"><b>'+money(r2(et))+'</b></td><td class="xdel"></td></tr></tfoot></table></div>':'<p class="hint">No other expenses in '+ml+'.</p>';
+  el('mtlabel').textContent='Total expenses in '+ml;
+  el('mtotal').textContent=money(r2(ct+et));
+  el('mbreak').innerHTML='<div><span>Cleaning fees</span> <b>'+money(r2(ct))+'</b></div>'+Object.keys(tot).map(function(c){return '<div><span>'+esc(c)+'</span> <b>'+money(r2(tot[c]))+'</b></div>'}).join('');
+  var xd=el('xdate');
+  if(xd.value.indexOf(mpre())!==0){var t=iso(new Date());xd.value=t.indexOf(mpre())===0?t:ds(1)}
+}
+el('xcat').innerHTML=CATS.map(function(c){return opt(c,c,'')}).join('');
+el('mprev').onclick=function(){shift(-1)};el('mnext').onclick=function(){shift(1)};
+el('mpdf').onclick=function(){document.title='Maintenance and expenses - '+el('mmonth').textContent;window.print()};
+el('xform').addEventListener('submit',async function(e){
+  e.preventDefault();
+  var d=el('xdate').value,a=parseFloat(el('xamt').value);
+  if(!d){showX('Choose a date.');return}
+  if(isNaN(a)||a<0){showX('Enter the amount as a number, like 120.50.');return}
+  if(!db){showX('Bookings are not connected yet.');return}
+  try{await db.collection('expenses').doc('new').set({date:d,category:el('xcat').value,description:el('xdesc').value.trim(),amount:r2(a)});el('xdesc').value='';el('xamt').value='';showX('');toast('Expense added')}
+  catch(err){showX('Could not save. Check the staff passcode, and that update_schema_2.sql was run in Supabase.')}
+});
+el('xlist').addEventListener('click',async function(e){
+  var id=e.target.getAttribute('data-xdel');if(!id||!db)return;
+  try{await db.collection('expenses').doc(id).delete();toast('Expense deleted')}catch(err){toast('Could not delete. Check the staff passcode.')}
+});
+el('eagent').addEventListener('change',function(){var a=agents.filter(function(x){return x.name===el('eagent').value})[0];if(a)el('erate').value=a.rate});
+el('ecancel').onclick=function(){el('editbox').hidden=true;editing=null};
+el('eform').addEventListener('submit',async function(e){
+  e.preventDefault();if(!editing||!db)return;
+  var n=el('ename').value.trim(),inc=parseFloat(el('eincome').value),cl=parseFloat(el('eclean').value||'0'),rt=parseFloat(el('erate').value||'0'),ag=el('eagent').value;
+  if(!n){showE('Enter a booking name.');return}
+  if(isNaN(inc)||inc<0){showE('Enter income as a number, like 450.');return}
+  if(isNaN(cl)||cl<0){showE('Enter the cleaning fee as a number, or 0.');return}
+  if(isNaN(rt)||rt<0||rt>100){showE('Commission must be between 0 and 100.');return}
+  var patch={name:n,income:r2(inc),notes:el('enotes').value.trim(),agent:ag,rate:ag?rt:0,cleaning:r2(cl)},d=editing[1];
+  try{
+    while(d<editing[2]){await db.collection('nights').doc(sid(editing[0],d)).update(patch);d=addDays(d,1)}
+    el('editbox').hidden=true;editing=null;toast('Booking updated');
+  }catch(err){showE('Could not save. Check the staff passcode, and that update_schema_2.sql was run in Supabase.')}
+});
+
 render();
 var timer=setTimeout(function(){if(!ready)el('livetxt').textContent='Can’t reach shared bookings yet. What you see may be out of date.'},10000);
 if(window.claude&&claude.use){
   claude.use('db').then(function(d){
     db=d;
     if(!db){el('livetxt').textContent='Bookings are not connected yet. Check config.js.';return}
+    db.collection('expenses').onSnapshot(function(snap){expenses=snap.docs.map(function(x){var d=x.data();return {id:x.id,date:d.date,category:d.category,description:d.description,amount:+d.amount||0}});render()});
     db.collection('agents').onSnapshot(function(snap){agents=snap.docs.map(function(x){return {name:x.id,rate:+x.data().rate||0}}).sort(byName);render()});
     db.collection('nights').onSnapshot(function(snap){
       var m={};

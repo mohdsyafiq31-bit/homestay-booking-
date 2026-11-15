@@ -24,7 +24,7 @@
     if (r.status === 409) throw 'clash';
     if (!r.ok) throw new Error('HTTP ' + r.status);
   }
-  var SEL = { nights: 'id,data', agents: 'name,rate' }, ORD = { nights: 'id', agents: 'name' };
+  var SEL = { nights: 'id,data', agents: 'name,rate', expenses: 'id,spent_on,category,description,amount' }, ORD = { nights: 'id', agents: 'name', expenses: 'spent_on' };
   async function poll(table) {
     if (!cbs[table] || (document.hidden && polled[table])) return;
     try {
@@ -39,13 +39,18 @@
       }
       polled[table] = true;
       cbs[table]({ docs: rows.map(function (x) {
-        return table === 'agents' ? { id: x.name, data: function () { return { rate: x.rate }; } }
-                                  : { id: x.id, data: function () { return x.data; } };
+        if (table === 'agents') return { id: x.name, data: function () { return { rate: x.rate }; } };
+        if (table === 'expenses') return { id: x.id, data: function () { return { date: x.spent_on, category: x.category, description: x.description, amount: x.amount }; } };
+        return { id: x.id, data: function () { return x.data; } };
       }) });
     } catch (e) {}
   }
-  function pollAll() { poll('nights'); poll('agents'); }
+  function pollAll() { poll('nights'); poll('agents'); poll('expenses'); }
   function ref(table, id) {
+    if (table === 'expenses') return {
+      set: async function (d) { await rpc('add_expense', { p_date: d.date, p_category: d.category, p_description: d.description, p_amount: d.amount }); pollAll(); },
+      delete: async function () { await rpc('delete_expense', { p_id: id }); pollAll(); }
+    };
     if (table === 'agents') return {
       set: async function (d) { await rpc('save_agent', { p_name: id, p_rate: d.rate }); pollAll(); },
       delete: async function () { await rpc('delete_agent', { p_name: id }); pollAll(); }
@@ -55,7 +60,8 @@
       get: async function () { return { exists: false, data: function () {} }; },
       set: async function (d) { await rpc('book_night', { p_id: id, p_data: d }); pollAll(); },
       update: async function (d) {
-        if (d.agent !== undefined) await rpc('set_commission', { p_id: id, p_agent: d.agent, p_rate: d.rate });
+        if (d.name !== undefined) await rpc('edit_booking', { p_id: id, p_patch: d });
+        else if (d.agent !== undefined) await rpc('set_commission', { p_id: id, p_agent: d.agent, p_rate: d.rate });
         else await rpc('update_income', { p_id: id, p_income: d.income });
         pollAll();
       },
